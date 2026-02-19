@@ -1,1 +1,3 @@
-from .hooks import post_init_copy_legacy_to_base
+# -*- coding: utf-8 -*-
+
+from . import hooks  # noqa: F401

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "sid_product_legacy",
-    "summary": "Migración de datos x_* hacia sid_* (sin redefinir Studio).",
+    "name": "SID Stock Legacy",
+    "summary": "Migración de datos x_* (Studio) hacia sid_* (campos base) en modelos de stock.",
     "version": "15.0.1.0.1",
     "category": "Inventory/Inventory",
     "author": "SIDSA",
-    "license": "AGPL-3",
-    "depends": ["sid_product_base"],
+    "license": "LGPL-3",
+    "depends": [
+        "sid_stock_base",
+        "sid_product_base",
+    ],
     "data": [],
-    "post_init_hook": "post_init_copy_legacy_to_base",
+    "post_init_hook": "post_init_copy_stock_legacy_to_base",
     "installable": True,
     "application": False,
     "auto_install": False,
