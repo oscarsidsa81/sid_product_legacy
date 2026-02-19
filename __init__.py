@@ -1,1 +1,1 @@
-from . import hooks
+from .hooks import post_init_copy_legacy_to_base
