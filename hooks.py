@@ -3,13 +3,12 @@ from odoo import api, SUPERUSER_ID
 
 def post_init_copy_legacy_to_base(cr, registry):
     """
-    Post-init hook: copia valores legacy x_* a los campos sid_* del módulo base.
+    Post-init hook: copia valores legacy x_* a sid_*.
     - NO sobrescribe si el destino ya está informado.
-    - Si el destino es Selection, intenta mapear etiqueta -> clave (y deja la clave tal cual si ya viene como clave).
-    - Escribe en batch para rendimiento.
+    - Si el destino es Selection, intenta mapear etiqueta -> clave (si ya viene como clave, la deja).
+    - Escribe en batch agrupando por valor.
     """
     env = api.Environment(cr, SUPERUSER_ID, {})
-
     PT = env["product.template"].sudo()
 
     template_map = [
@@ -20,27 +19,18 @@ def post_init_copy_legacy_to_base(cr, registry):
     ]
 
     def selection_label_to_key(dst_field, value):
-        """
-        Para fields.Selection:
-        - si value coincide con una etiqueta, devuelve su clave.
-        - si ya coincide con una clave, lo devuelve tal cual.
-        - si no coincide con nada, devuelve el valor tal cual (no inventa).
-        """
-        # selection puede ser callable; en post_init solemos tenerlo ya materializado,
-        # pero por robustez lo soportamos si fuera callable.
         selection = dst_field.selection
         if callable(selection):
-            selection = selection(env)
+            selection = selection(env)  # por robustez
 
-        # selection: [(key, label), ...]
         key_to_label = dict(selection or [])
         label_to_key = {label: key for key, label in key_to_label.items()}
 
         if value in key_to_label:
-            return value  # ya es clave
+            return value
         if value in label_to_key:
-            return label_to_key[value]  # venía como etiqueta
-        return value  # desconocido: no tocamos (lo validará ORM si procede)
+            return label_to_key[value]
+        return value  # desconocido: no inventamos
 
     for src, dst in template_map:
         if src not in PT._fields or dst not in PT._fields:
@@ -48,23 +38,24 @@ def post_init_copy_legacy_to_base(cr, registry):
 
         dst_field = PT._fields[dst]
 
-        # Solo los que tienen src informado y dst vacío: no machacamos
-        domain = [(src, "!=", False), (dst, "=", False)]
-        records = PT.search(domain)
+        # No machacar: solo copiar cuando dst está vacío
+        records = PT.search([(src, "!=", False), (dst, "=", False)])
 
-        # batch write: agrupamos por valor destino final
-        bucket = {}  # mapped_value -> recordset
+        buckets = {}  # val -> recordset
         for rec in records:
             val = rec[src]
             if not val:
                 continue
 
-            # Si destino es selection, intentamos convertir etiqueta->clave
             if dst_field.type == "selection":
                 val = selection_label_to_key(dst_field, val)
 
-            bucket.setdefault(val, PT.browse()). |= rec
+            # unir recordsets correctamente
+            rs = buckets.get(val)
+            if rs is None:
+                buckets[val] = rec
+            else:
+                buckets[val] = rs | rec
 
-        for val, rs in bucket.items():
-            if rs:
-                rs.write({dst: val})
+        for val, rs in buckets.items():
+            rs.write({dst: val})
