@@ -5,7 +5,7 @@
     "version": "15.0.1.0.1",
     "category": "Inventory/Inventory",
     "author": "SIDSA",
-    "license": "AGPL-3",
+    "license": "LGPL-3",
     "depends": ["sid_product_base"],
     "data": [],
     "post_init_hook": "post_init_copy_legacy_to_base",
