@@ -4,7 +4,7 @@
     "summary": "Migración de datos x_* hacia sid_* (sin redefinir Studio).",
     "version": "15.0.1.0.1",
     "category": "Inventory/Inventory",
-    "author": "SIDSA",
+    "author": "oscarsidsa81",
     "license": "LGPL-3",
     "depends": ["sid_product_base"],
     "data": [],
